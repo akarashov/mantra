@@ -1,0 +1,33 @@
+telegram:
+  token: "${TELEGRAM_TOKEN}"
+
+salute:
+  client_id: "${SALUTE_CLIENT_ID}"
+  client_secret: "${SALUTE_CLIENT_SECRET}"
+  scope: "SALUTE_SPEECH_PERS"
+  auth_url: "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+  grpc_endpoint: "smartspeech.sber.ru"
+  grpc_insecure: false
+  cert_path: "cert/ru.pem"
+  poll_interval: "2s"
+  model_uri: "general"
+
+gigachat:
+  client_id: "${GIGACHAT_CLIENT_ID}"
+  client_secret: "${GIGACHAT_CLIENT_SECRET}"
+  scope: "GIGACHAT_API_PERS"
+  auth_url: "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+  api_url: "https://gigachat.devices.sberbank.ru/api/v1"
+  model: "GigaChat-2-Pro"
+  cert_path: "cert/ru.pem"
+
+database:
+  dsn: "${DATABASE_DSN}"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_life: "5m"
+
+# app:
+#   queue_size: 100
+#   workers_count: 4
+#   request_timeout: "5m"
