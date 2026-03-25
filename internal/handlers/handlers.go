@@ -2,6 +2,8 @@
 package handlers
 
 import (
+	"sync"
+
 	"github.com/akarashov/mantra/internal/services/chat"
 	"github.com/akarashov/mantra/internal/services/speech"
 	"github.com/akarashov/mantra/internal/services/user"
@@ -10,6 +12,11 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
+type UserSession struct {
+	State string
+	Data  map[string]any
+}
+
 // Handler - структура, которая содержит все зависимости для обработки сообщений от Telegram бота
 type Handler struct {
 	bot           *telebot.Bot    // Telegram бот
@@ -17,6 +24,8 @@ type Handler struct {
 	speechService *speech.Service // Сервис для распознавания речи
 	chatService   *chat.Service   // Сервис для ведения чатов с AI
 	log           *logger.Logger  // Логгер для логирования событий и ошибок
+	sessions   map[int64]*UserSession // sessions хранит состояние пользователя между сообщениями.
+	sessionsMu sync.RWMutex
 }
 
 // New создаёт новый экземпляр Handler, инициализируя все зависимости
@@ -33,6 +42,7 @@ func New(
 		speechService: speechService,
 		chatService:   chatService,
 		log:           log,
+		sessions:      make(map[int64]*UserSession),
 	}
 }
 

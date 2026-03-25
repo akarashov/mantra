@@ -83,29 +83,14 @@ func New(log *logger.Logger) (*App, error) {
 }
 
 // Run запускает приложение, регистрируя обработчики и запуская бота, а также обрабатывая сигналы завершения для graceful shutdown
-func (a *App) Run(ctx context.Context) error {
+func (a *App) Run(ctx context.Context) {
 	a.handler.Register()
-	errCh := make(chan error, 1) // Канал для ошибок при запуске бота с буфером 1, чтобы избежать блокировки
-	go func() {
-		a.log.Info("starting telegram bot poller...")
-		a.bot.Start()
-	}()
-
+	a.log.Info("starting telegram bot poller...")
+	go a.bot.Start()
 	// Ожидание сигнала завершения
 	<-ctx.Done()
-
 	a.log.Info("stopping telegram bot...")
 	a.bot.Stop()
-
-	// Ожидание завершения бота с таймаутом
-	select {
-	case err := <-errCh:
-		return err
-	case <-time.After(10 * time.Second):
-		return fmt.Errorf("bot shutdown timeout")
-	default:
-		return nil
-	}
 }
 
 // initSpeechClient инициализирует клиент для распознавания речи

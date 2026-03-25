@@ -46,11 +46,11 @@ func (c *Client) GetSummary(ctx context.Context, text string) (string, error) {
 }
 
 // AskQuestion задаёт вопрос модели с учётом контекста
-func (c *Client) AskQuestion(ctx context.Context, question, context string) (string, error) {
-	c.log.Debug("asking question to GigaChat", "question", question, "context_length", len(context))
+func (c *Client) AskQuestion(ctx context.Context, question, meetingContext string) (string, error) {
+	c.log.Debug("asking question to GigaChat", "question", question, "context_length", len(meetingContext))
 	prompt := fmt.Sprintf(`Ответь на вопрос """%s""" по русски,`+
 		`используя информацию из контекста """%s""",`+
-		`если информации недостаточно, не выдумывай`, question, context)
+		`если информации недостаточно, не выдумывай`, question, meetingContext)
 	return c.sendMessage(ctx, prompt)
 }
 

@@ -13,10 +13,10 @@ import (
 
 // main - основная функция, которая запускает приложение MANTRA
 func main() {
-	log_level := utils.Getenv("LOG_LEVEL", "info")
+	logLevel := utils.Getenv("LOG_LEVEL", "info")
 
-	log := logger.New(log_level)
-	log.Info("setting log level, using environment variable LOG_LEVEL,", "$LOG_LEVEL", log_level)
+	log := logger.New(logLevel)
+	log.Info("setting log level, using environment variable LOG_LEVEL,", "$LOG_LEVEL", logLevel)
 
 	ctx, stop := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -29,10 +29,7 @@ func main() {
 	}
 
 	log.Info("running MANTRA")
-	err = application.Run(ctx)
-	if err != nil {
-		log.Fatal("failed to run application", "error", err)
-	}
+	application.Run(ctx)
 
 	<-ctx.Done()
 	log.Info("MANTRA stopped gracefully")

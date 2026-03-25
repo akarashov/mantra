@@ -196,7 +196,7 @@ func (c *Client) downloadResult(ctx context.Context, responseFileID string) (str
 		}
 		result = append(result, resp.FileChunk...)
 	}
-	nt, err := resultPase(string(result))
+	nt, err := resultParse(string(result))
 	if err != nil {
 		return "", fmt.Errorf("parse transcription result: %w", err)
 	}
@@ -227,11 +227,10 @@ func audioEncodingFromContentType(contentType string) recognition.RecognitionOpt
 }
 
 // resultPase парсит JSON результат транскрибации и извлекает нормализованный текст
-func resultPase(content string) (string, error) {
+func resultParse(content string) (string, error) {
 	var responses []TranscriptionResponse
 	err := json.Unmarshal([]byte(content), &responses)
 	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
 		return "", fmt.Errorf("parse transcription result: %w", err)
 	}
 	return responses[0].Results[0].NormalizedText, nil

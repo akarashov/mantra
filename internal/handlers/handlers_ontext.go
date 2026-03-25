@@ -10,12 +10,7 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
-type UserSession struct {
-	State string
-	Data  map[string]any
-}
 
-var sessions = make(map[int64]*UserSession)
 
 // handleStart - регистрация пользователя
 func (h *Handler) handleStart(c telebot.Context) error {
@@ -45,7 +40,10 @@ func (h *Handler) handleStart(c telebot.Context) error {
 // handleText - обработка обычных текстовых сообщений
 func (h *Handler) handleText(c telebot.Context) error {
 	userID := c.Sender().ID
-	if session, exists := sessions[userID]; exists {
+	h.sessionsMu.RLock()
+	session, exists := h.sessions[userID]
+	h.sessionsMu.RUnlock()
+	if exists {
 		switch session.State {
 		case "awaiting_search":
 			return h.handleFind(c)
@@ -54,7 +52,9 @@ func (h *Handler) handleText(c telebot.Context) error {
 		case "awaiting_get_meeting":
 			return h.handleGet(c)
 		default:
-			delete(sessions, userID)
+			h.sessionsMu.Lock()
+			delete(h.sessions, userID)
+			h.sessionsMu.Unlock()
 			return c.Send("Сессия сброшена. Пожалуйста, используйте кнопки меню или /help для справки.")
 		}
 	}
@@ -62,22 +62,28 @@ func (h *Handler) handleText(c telebot.Context) error {
 	case "Список встреч":
 		return h.handleList(c)
 	case "Поиск":
-		sessions[userID] = &UserSession{
+		h.sessionsMu.Lock()
+		h.sessions[userID] = &UserSession{
 			State: "awaiting_search",
 			Data:  make(map[string]any),
 		}
+		h.sessionsMu.Unlock()
 		return c.Send("Введите текст для поиска:")
 	case "Чат с ИИ":
-		sessions[userID] = &UserSession{
+		h.sessionsMu.Lock()
+		h.sessions[userID] = &UserSession{
 			State: "awaiting_ai_question",
 			Data:  make(map[string]any),
 		}
+		h.sessionsMu.Unlock()
 		return c.Send("Задайте вопрос ИИ:")
 	case "Получить встречу":
-		sessions[userID] = &UserSession{
+		h.sessionsMu.Lock()
+		h.sessions[userID] = &UserSession{
 			State: "awaiting_get_meeting",
 			Data:  make(map[string]any),
 		}
+		h.sessionsMu.Unlock()
 		return c.Send("Введите ID встречи:")
 	default:
 		return c.Send("Используйте кнопки меню или /help для справки.")
