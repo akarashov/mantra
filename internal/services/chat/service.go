@@ -14,14 +14,14 @@ import (
 // Service предоставляет бизнес-логику для взаимодействия с ИИ-ассистентом
 type Service struct {
 	client *chat.Client
-	repo   repository.Repository
+	repo   repository.Searcher[repository.Meeting, repository.ListQuery, repository.SearchQuery, repository.MeetingWithRank]
 	log    *logger.Logger
 }
 
 // NewService создаёт новый сервис чата
 func NewService(
 	client *chat.Client,
-	repo repository.Repository,
+	repo repository.Searcher[repository.Meeting, repository.ListQuery, repository.SearchQuery, repository.MeetingWithRank],
 	log *logger.Logger,
 ) *Service {
 	return &Service{
@@ -37,7 +37,7 @@ func (s *Service) AskQuestion(ctx context.Context, userID int64, question string
 		"user_id", userID,
 		"question_length", len(question))
 	// Берём последние 3 встречи для баланса между контекстом и лимитом токенов
-	meetings, err := s.repo.GetMeetingsByUser(ctx, repository.ListQuery{
+	meetings, err := s.repo.List(ctx, repository.ListQuery{
 		UserID: userID,
 		Limit:  3,
 		Offset: 0,

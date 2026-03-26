@@ -10,24 +10,30 @@ import (
 
 // Service предоставляет бизнес-логику для работы с пользователями
 type Service struct {
-	repo repository.Repository
-	log  *logger.Logger
+	userRepo        repository.Crud[repository.User, int64]
+	meetingRepo     repository.Crud[repository.Meeting, repository.MeetingKey]
+	meetingSearcher repository.Searcher[repository.Meeting, repository.ListQuery, repository.SearchQuery, repository.MeetingWithRank]
+	log             *logger.Logger
 }
 
 // NewService создаёт новый пользовательский сервис
 func NewService(
-	repo repository.Repository,
+	userRepo repository.Crud[repository.User, int64],
+	meetingRepo repository.Crud[repository.Meeting, repository.MeetingKey],
+	meetingSearcher repository.Searcher[repository.Meeting, repository.ListQuery, repository.SearchQuery, repository.MeetingWithRank],
 	log *logger.Logger,
 ) *Service {
 	return &Service{
-		repo: repo,
-		log:  log,
+		userRepo:        userRepo,
+		meetingRepo:     meetingRepo,
+		meetingSearcher: meetingSearcher,
+		log:             log,
 	}
 }
 
 // Register регистрирует нового пользователя или обновляет данные существующего
 func (s *Service) Register(ctx context.Context, telegramID int64, username string) error {
-	_, err := s.repo.CreateUser(ctx, telegramID, username)
+	_, err := s.userRepo.Create(ctx, &repository.User{TelegramID: telegramID, Username: username})
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
 	}
@@ -45,7 +51,7 @@ func (s *Service) GetMeetings(ctx context.Context, userID int64, limit, offset i
 	if offset < 0 {
 		offset = 0
 	}
-	meetings, err := s.repo.GetMeetingsByUser(ctx, repository.ListQuery{
+	meetings, err := s.meetingSearcher.List(ctx, repository.ListQuery{
 		UserID: userID,
 		Limit:  limit,
 		Offset: offset,
@@ -59,7 +65,7 @@ func (s *Service) GetMeetings(ctx context.Context, userID int64, limit, offset i
 
 // GetMeeting получает конкретную встречу с проверкой прав доступа
 func (s *Service) GetMeeting(ctx context.Context, userID, meetingID int64) (*repository.Meeting, error) {
-	meeting, err := s.repo.GetMeetingByID(ctx, meetingID, userID)
+	meeting, err := s.meetingRepo.Read(ctx, repository.MeetingKey{ID: meetingID, UserID: userID})
 	if err != nil {
 		return nil, fmt.Errorf("get meeting: %w", err)
 	}
@@ -77,7 +83,7 @@ func (s *Service) SearchMeetings(ctx context.Context, userID int64, query string
 	if query == "" {
 		return nil, fmt.Errorf("search query cannot be empty")
 	}
-	results, err := s.repo.SearchMeetings(ctx, repository.SearchQuery{
+	results, err := s.meetingSearcher.Search(ctx, repository.SearchQuery{
 		UserID: userID,
 		Query:  query,
 		Limit:  20,

@@ -16,7 +16,7 @@ import (
 // Service предоставляет бизнес-логику обработки речи (в памяти)
 type Service struct {
 	client      *speech.Client
-	repo        repository.Repository
+	repo        repository.Crud[repository.Meeting, repository.MeetingKey]
 	log         *logger.Logger
 	chatService *chat.Service
 }
@@ -43,7 +43,7 @@ type ProcessResult struct {
 // NewService создаёт сервис
 func NewService(
 	client *speech.Client,
-	repo repository.Repository,
+	repo repository.Crud[repository.Meeting, repository.MeetingKey],
 	log *logger.Logger,
 	chatService *chat.Service,
 ) *Service {
@@ -81,7 +81,7 @@ func (s *Service) ProcessMeeting(ctx context.Context, input *ProcessInput) (*Pro
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
-	meeting, err = s.repo.CreateMeeting(ctx, meeting)
+	meeting, err = s.repo.Create(ctx, meeting)
 	if err != nil {
 		return nil, fmt.Errorf("create meeting record: %w", err)
 	}
@@ -93,7 +93,7 @@ func (s *Service) ProcessMeeting(ctx context.Context, input *ProcessInput) (*Pro
 			"meeting_id", meeting.ID, "error", err)
 		summary = "Выжимка не сгенерирована"
 	}
-	_ = s.repo.UpdateMeeting(context.Background(), meeting.ID, input.UserID, transcript, summary)
+	_ = s.repo.Update(context.Background(), repository.MeetingKey{ID: meeting.ID, UserID: input.UserID}, &repository.Meeting{Transcript: transcript, Summary: summary})
 	s.log.Info("meeting processing completed",
 		"meeting_id", meeting.ID,
 		"user_id", input.UserID,

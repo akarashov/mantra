@@ -29,6 +29,12 @@ type MeetingWithRank struct {
 	Rank float64 `db:"rank"` // Ранг релевантности для поисковых запросов
 }
 
+// MeetingKey ключ от встречи
+type MeetingKey struct {
+	ID     int64 // Внутренний ID в БД
+	UserID int64 // Telegram ID пользователя
+}
+
 // SearchQuery параметры поиска встреч
 type SearchQuery struct {
 	UserID int64  // Telegram ID пользователя

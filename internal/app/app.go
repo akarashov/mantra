@@ -125,8 +125,11 @@ func initChatClient(cfg *config.Config, log *logger.Logger) *chat.Client {
 
 // initServices инициализирует все сервисы
 func initServices(repo *postgres.Postgres, speechClient *speech.Client, chatClient *chat.Client, log *logger.Logger) (*user.Service, *speechsvc.Service, *chatsvc.Service) {
-	userService := user.NewService(repo, log)
-	chatService := chatsvc.NewService(chatClient, repo, log)
-	speechService := speechsvc.NewService(speechClient, repo, log, chatService)
+	userRepo := postgres.NewUserRepo(repo)
+	meetingRepo := postgres.NewMeetingRepo(repo)
+
+	userService := user.NewService(userRepo, meetingRepo, meetingRepo, log)
+	chatService := chatsvc.NewService(chatClient, meetingRepo, log)
+	speechService := speechsvc.NewService(speechClient, meetingRepo, log, chatService)
 	return userService, speechService, chatService
 }
