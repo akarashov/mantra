@@ -8,6 +8,7 @@ import (
 
 	"github.com/akarashov/mantra/internal/clients/chat"
 	"github.com/akarashov/mantra/internal/clients/speech"
+	"github.com/akarashov/mantra/internal/clients/vault"
 	"github.com/akarashov/mantra/internal/config"
 	"github.com/akarashov/mantra/internal/handlers"
 	"github.com/akarashov/mantra/internal/repository/postgres"
@@ -45,6 +46,33 @@ func New(log *logger.Logger) (*App, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create telegram bot: %w", err)
+	}
+
+	// If Vault is configured, initialize it and fetch DB credentials
+	if cfg.Vault.Addr != "" && cfg.Vault.DatabaseRole != "" {
+		log.Info("initializing vault client", "addr", cfg.Vault.Addr)
+		vaultClient := vault.New(cfg.Vault, log.With("component", "vault"))
+		// start background rotation of wrapped tokens if configured
+		vaultClient.StartAutoRotate(context.Background())
+		// try to get dynamic DB creds
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		user, pass, ttl, err := vaultClient.GetDatabaseCredentials(ctx, cfg.Vault.DatabaseRole)
+		if err != nil {
+			log.Info("vault: failed to get db creds, falling back to config DSN", "err", err)
+		} else {
+			// build DSN from host/port/name
+			host := cfg.Database.Host
+			port := cfg.Database.Port
+			name := cfg.Database.Name
+			ssl := cfg.Database.SSLMode
+			if ssl == "" {
+				ssl = "disable"
+			}
+			dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", user, pass, host, port, name, ssl)
+			cfg.Database.DSN = dsn
+			log.Info("vault: obtained db creds", "user", user, "ttl_s", int(ttl.Seconds()))
+		}
 	}
 
 	log.Info("creating postgres repository", "dsn_set", cfg.Database.DSN != "")

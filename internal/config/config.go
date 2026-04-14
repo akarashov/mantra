@@ -15,6 +15,7 @@ type Config struct {
 	Salute   Salute   `yaml:"salute"`
 	GigaChat GigaChat `yaml:"gigachat"`
 	Database Database `yaml:"database"`
+	Vault    Vault    `yaml:"vault"`
 }
 
 // Telegram - конфигурация для Telegram бота
@@ -52,6 +53,27 @@ type Database struct {
 	MaxOpenConns int    `yaml:"max_open_conns"`
 	MaxIdleConns int    `yaml:"max_idle_conns"`
 	ConnMaxLife  string `yaml:"conn_max_life"`
+	// Optional connection parts when using Vault to supply credentials
+	Host    string `yaml:"host"`
+	Port    int    `yaml:"port"`
+	Name    string `yaml:"name"`
+	SSLMode string `yaml:"ssl_mode"`
+}
+
+// Vault - конфигурация для HashiCorp Vault
+type Vault struct {
+	Addr                 string        `yaml:"addr"`
+	Token                string        `yaml:"token"`
+	AppRoleRoleID        string        `yaml:"approle_role_id"`
+	AppRoleSecretID      string        `yaml:"approle_secret_id"`
+	AppRoleSecretWrapped bool          `yaml:"approle_secret_wrapped"`
+	DatabaseRole         string        `yaml:"database_role"`
+	WrapTTL              string        `yaml:"wrap_ttl"`
+	RotateInterval       time.Duration `yaml:"rotate_interval"`
+	// AppRoleRoleName - имя роли в Vault (используется при создании secret-id)
+	AppRoleRoleName string `yaml:"approle_role_name"`
+	// WrappedTokenFile - путь для записи wrapping token (wrap_info.token) при ротации
+	WrappedTokenFile string `yaml:"wrapped_token_file"`
 }
 
 // Load загружает конфигурацию из YAML файла и переопределяет её значениями из переменных окружения
@@ -87,5 +109,26 @@ func (c *Config) overrideFromEnv() {
 	}
 	if v := os.Getenv("GIGACHAT_CLIENT_SECRET"); v != "" {
 		c.GigaChat.ClientSecret = v
+	}
+	if v := os.Getenv("VAULT_ADDR"); v != "" {
+		c.Vault.Addr = v
+	}
+	if v := os.Getenv("VAULT_TOKEN"); v != "" {
+		c.Vault.Token = v
+	}
+	if v := os.Getenv("VAULT_APPROLE_ROLE_ID"); v != "" {
+		c.Vault.AppRoleRoleID = v
+	}
+	if v := os.Getenv("VAULT_APPROLE_ROLE_NAME"); v != "" {
+		c.Vault.AppRoleRoleName = v
+	}
+	if v := os.Getenv("VAULT_WRAPPED_TOKEN_FILE"); v != "" {
+		c.Vault.WrappedTokenFile = v
+	}
+	if v := os.Getenv("VAULT_APPROLE_SECRET_ID"); v != "" {
+		c.Vault.AppRoleSecretID = v
+	}
+	if v := os.Getenv("VAULT_DATABASE_ROLE"); v != "" {
+		c.Vault.DatabaseRole = v
 	}
 }
